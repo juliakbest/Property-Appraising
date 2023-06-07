@@ -1,5 +1,12 @@
 import re
 
+# Dictionary of potential synonyms
+synonyms = {
+    'go': ['go', 'move', 'proceed'],
+    'along': ['along', 'following'],
+    # Add more synonyms as needed
+}
+
 def convert_direction(direction):
     direction = direction.strip().upper()
 
@@ -21,10 +28,8 @@ def convert_legal_description(legal_description):
     for line in lines:
         line = line.strip()
         if line:
-            curve_match = re.search(r'(?i)curve', line)
-
+            curve_match = re.search(r'(?i)(?:{go}\s+)?(?:{along}\s+)?the\s+arc\s+of\s+said\s+curve\s+through\s+a\s+central\s+angle\s+of\s+(\d+)\s+degrees?\s+(\d+)\s+minutes?\s+(\d+)\s+seconds?,\s+for\s+an\s+arc\s+distance\s+of\s+(\d+\.\d+)\s+feet\s+\(chord\s+bearing:\s+(\w+)\s+(\d+)\s+degrees?\s+(\d+)\s+minutes?\s+(\d+)\s+seconds?\s+(\w+),\s+chord\s+distance:\s+(\d+\.\d+)\s+feet\)', line)
             if curve_match:
-                curve_match = re.search(r'(?i)GO\s+ALONG THE ARC OF SAID CURVE THROUGH A CENTRAL ANGLE OF (\d+)\s+DEGREES?\s+(\d+)\s+MINUTES?\s+(\d+)\s+SECONDS?,\s+FOR\s+AN\s+ARC\s+DISTANCE\s+OF\s+(\d+\.\d+)\s+FEET\s+\(CHORD\s+BEARING:\s+(\w+)\s+(\d+)\s+DEGREES?\s+(\d+)\s+MINUTES?\s+(\d+)\s+SECONDS?\s+(\w+),\s+CHORD\s+DISTANCE:\s+(\d+\.\d+)\s+FEET\)', line)
                 direction = convert_direction(curve_match.group(5))
                 degrees = curve_match.group(6).zfill(2)
                 minutes = curve_match.group(7).zfill(2)
@@ -39,7 +44,7 @@ def convert_legal_description(legal_description):
                 traverse_line = f"NC C {chord_distance} R {arc_distance} C {chord_direction}{chord_degrees}-{chord_minutes}-{chord_seconds}{chord_quadrant} {direction}{degrees}-{minutes}-{seconds} L"
                 traverse_lines.append(traverse_line)
             else:
-                direction_match = re.search(r'(?i)GO\s+(\w+)\s+(\d+)\s+DEGREES?\s+(\d+)\s+MINUTES?\s+(\d+)\s+SECONDS?\s+(\w+)', line)
+                direction_match = re.search(r'(?i)(?:{go}\s+)?(\w+)\s+(\d+)\s+degrees?\s+(\d+)\s+minutes?\s+(\d+)\s+seconds?\s+(\w+)', line)
                 if direction_match:
                     direction = convert_direction(direction_match.group(1))
                     degrees = direction_match.group(2).zfill(2)
@@ -54,6 +59,12 @@ def convert_legal_description(legal_description):
 
 # Prompt user to input legal description
 legal_description = input("Enter the surveyed legal description: ")
+
+# Replace potential synonyms in the pattern
+pattern = r'(?i)(?:{go}\s+)?(?:{along}\s+)?the\s+arc\s+of\s+said\s+curve\s+through\s+a\s+central\s+angle\s+of\s+(\d+)\s+degrees?\s+(\d+)\s+minutes?\s+(\d+)\s+seconds?,\s+for\s+an\s+arc\s+distance\s+of\s+(\d+\.\d+)\s+feet\s+\(chord\s+bearing:\s+(\w+)\s+(\d+)\s+degrees?\s+(\d+)\s+minutes?\s+(\d+)\s+seconds?\s+(\w+),\s+chord\s+distance:\s+(\d+\.\d+)\s+feet\)'
+
+# Replace potential synonyms in the pattern using dictionary values
+pattern = pattern.format(go='|'.join(synonyms['go']), along='|'.join(synonyms['along']))
 
 traverse = convert_legal_description(legal_description)
 
