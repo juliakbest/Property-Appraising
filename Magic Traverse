@@ -1,0 +1,62 @@
+import re
+
+def convert_direction(direction):
+    direction = direction.strip().upper()
+
+    if direction.startswith('N'):
+        return 'N'
+    elif direction.startswith('S'):
+        return 'S'
+    elif direction.startswith('E'):
+        return 'E'
+    elif direction.startswith('W'):
+        return 'W'
+    else:
+        return ''
+
+def convert_legal_description(legal_description):
+    traverse_lines = []
+    lines = re.split(r'(?i)(?<=\bthence\b)', legal_description)
+
+    for line in lines:
+        line = line.strip()
+        if line:
+            curve_match = re.search(r'(?i)curve', line)
+
+            if curve_match:
+                curve_match = re.search(r'(?i)GO\s+ALONG THE ARC OF SAID CURVE THROUGH A CENTRAL ANGLE OF (\d+)\s+DEGREES?\s+(\d+)\s+MINUTES?\s+(\d+)\s+SECONDS?,\s+FOR\s+AN\s+ARC\s+DISTANCE\s+OF\s+(\d+\.\d+)\s+FEET\s+\(CHORD\s+BEARING:\s+(\w+)\s+(\d+)\s+DEGREES?\s+(\d+)\s+MINUTES?\s+(\d+)\s+SECONDS?\s+(\w+),\s+CHORD\s+DISTANCE:\s+(\d+\.\d+)\s+FEET\)', line)
+                direction = convert_direction(curve_match.group(5))
+                degrees = curve_match.group(6).zfill(2)
+                minutes = curve_match.group(7).zfill(2)
+                seconds = curve_match.group(8).zfill(2)
+                arc_distance = curve_match.group(4)
+                chord_direction = convert_direction(curve_match.group(9))
+                chord_degrees = curve_match.group(10).zfill(2)
+                chord_minutes = curve_match.group(11).zfill(2)
+                chord_seconds = curve_match.group(12).zfill(2)
+                chord_quadrant = curve_match.group(13).upper()
+                chord_distance = curve_match.group(14)
+                traverse_line = f"NC C {chord_distance} R {arc_distance} C {chord_direction}{chord_degrees}-{chord_minutes}-{chord_seconds}{chord_quadrant} {direction}{degrees}-{minutes}-{seconds} L"
+                traverse_lines.append(traverse_line)
+            else:
+                direction_match = re.search(r'(?i)GO\s+(\w+)\s+(\d+)\s+DEGREES?\s+(\d+)\s+MINUTES?\s+(\d+)\s+SECONDS?\s+(\w+)', line)
+                if direction_match:
+                    direction = convert_direction(direction_match.group(1))
+                    degrees = direction_match.group(2).zfill(2)
+                    minutes = direction_match.group(3).zfill(2)
+                    seconds = direction_match.group(4).zfill(2)
+                    quadrant = direction_match.group(5).upper()
+                    traverse_line = f"DD {direction}{degrees}-{minutes}-{seconds}{quadrant}"
+                    traverse_lines.append(traverse_line)
+
+    return traverse_lines
+
+
+# Prompt user to input legal description
+legal_description = input("Enter the surveyed legal description: ")
+
+traverse = convert_legal_description(legal_description)
+
+# Print the generated traverse lines
+for line in traverse:
+    print(line)
